@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IBM-NJ JWT Token Refresh</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #0062ff;
+      --primary-dark: #004ec4;
+      --secondary: #6c757d;
+      --success: #28a745;
+      --danger: #dc3545;
+      --warning: #ffc107;
+      --light: #f8f9fa;
+      --dark: #343a40;
+      --gray: #6c757d;
+      --border-radius: 8px;
+      --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      color: var(--dark);
+      line-height: 1.6;
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: white;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      overflow: hidden;
+      margin-bottom: 20px;
+      transition: var(--transition);
+    }
+
+    .card:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .card-header {
+      background: var(--primary);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .card-header h2 {
+      font-weight: 600;
+      font-size: 1.5rem;
+      margin-bottom: 5px;
+    }
+
+    .card-header p {
+      opacity: 0.9;
+      font-size: 0.9rem;
+    }
+
+    .card-body {
+      padding: 25px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--dark);
+    }
+
+    .input-with-icon {
+      position: relative;
+    }
+
+    .input-with-icon i {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--gray);
+    }
+
+    .input-with-icon input {
+      padding-left: 45px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      border-radius: var(--border-radius);
+      font-size: 1rem;
+      transition: var(--transition);
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0, 98, 255, 0.1);
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--border-radius);
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: center;
+      width: 100%;
+    }
+
+    .btn:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background: var(--secondary);
+    }
+
+    .btn-secondary:hover {
+      background: #5a6268;
+    }
+
+    .btn-success {
+      background: var(--success);
+    }
+
+    .btn-success:hover {
+      background: #218838;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn-group .btn {
+      flex: 1;
+    }
+
+    .token-status {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--light);
+      padding: 15px;
+      border-radius: var(--border-radius);
+      margin-bottom: 20px;
+    }
+
+    .token-status-item {
+      text-align: center;
+      flex: 1;
+    }
+
+    .token-status-item .label {
+      font-size: 0.8rem;
+      color: var(--gray);
+      margin-bottom: 5px;
+    }
+
+    .token-status-item .value {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .token-status-item .status {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+
+    .status-valid {
+      background: var(--success);
+    }
+
+    .status-expired {
+      background: var(--danger);
+    }
+
+    .status-refreshing {
+      background: var(--warning);
+    }
+
+    .log-container {
+      margin-top: 25px;
+    }
+
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .log-header h3 {
+      font-size: 1.2rem;
+    }
+
+    .log-controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    .log-controls button {
+      background: none;
+      border: none;
+      color: var(--gray);
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: var(--transition);
+    }
+
+    .log-controls button:hover {
+      color: var(--primary);
+    }
+
+    #log {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 15px;
+      height: 200px;
+      overflow-y: auto;
+      border-radius: var(--border-radius);
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .log-entry {
+      margin-bottom: 8px;
+      padding-left: 10px;
+      border-left: 3px solid transparent;
+    }
+
+    .log-entry.info {
+      border-left-color: var(--primary);
+    }
+
+    .log-entry.success {
+      border-left-color: var(--success);
+    }
+
+    .log-entry.warning {
+      border-left-color: var(--warning);
+    }
+
+    .log-entry.error {
+      border-left-color: var(--danger);
+    }
+
+    .log-timestamp {
+      color: #6a9955;
+    }
+
+    .log-message {
+      color: #d4d4d4;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      color: var(--gray);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+      .btn-group {
+        flex-direction: column;
+      }
+      
+      .token-status {
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      .token-status-item {
+        width: 100%;
+      }
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      background: white;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transform: translateX(150%);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+    }
+
+    .notification.show {
+      transform: translateX(0);
+    }
+
+    .notification.success {
+      border-left: 4px solid var(--success);
+    }
+
+    .notification.error {
+      border-left: 4px solid var(--danger);
+    }
+
+    .notification.warning {
+      border-left: 4px solid var(--warning);
+    }
+
+    .notification i {
+      font-size: 1.2rem;
+    }
+
+    .notification.success i {
+      color: var(--success);
+    }
+
+    .notification.error i {
+      color: var(--danger);
+    }
+
+    .notification.warning i {
+      color: var(--warning);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="card-header">
+        <h2><i class="fas fa-key"></i> JWT Authentication</h2>
+        <p>IBM-NJ Token Management System</p>
+      </div>
+      <div class="card-body">
+        <div class="token-status">
+          <div class="token-status-item">
+            <div class="label">Access Token</div>
+            <div class="value">
+              <span class="status status-expired" id="access-token-status"></span>
+              <span id="access-token-text">Not logged in</span>
+            </div>
+          </div>
+          <div class="token-status-item">
+            <div class="label">Refresh Token</div>
+            <div class="value">
+              <span class="status status-expired" id="refresh-token-status"></span>
+              <span id="refresh-token-text">Not available</span>
+            </div>
+          </div>
+          <div class="token-status-item">
+            <div class="label">Expires In</div>
+            <div class="value" id="token-expiry">--:--</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="username">Username</label>
+          <div class="input-with-icon">
+            <i class="fas fa-user"></i>
+            <input type="text" id="username" placeholder="Enter your username">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-with-icon">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="password" placeholder="Enter your password">
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn" onclick="login()">
+            <i class="fas fa-sign-in-alt"></i> Login
+          </button>
+          <button class="btn btn-secondary" onclick="getProtectedData()">
+            <i class="fas fa-shield-alt"></i> Access Protected Route
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="log-container">
+          <div class="log-header">
+            <h3><i class="fas fa-terminal"></i> Activity Log</h3>
+            <div class="log-controls">
+              <button onclick="clearLog()"><i class="fas fa-trash"></i> Clear</button>
+              <button onclick="exportLog()"><i class="fas fa-download"></i> Export</button>
+            </div>
+          </div>
+          <div id="log"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>IBM-NJ JWT Token Refresh System &copy; 2023</p>
+    </div>
+  </div>
+
+  <div class="notification" id="notification">
+    <i class="fas fa-info-circle"></i>
+    <span id="notification-message">This is a notification</span>
+  </div>
+
+  <script>
+    let accessToken = "";
+    let refreshToken = "";
+    let tokenExpiry = null;
+    let refreshTimer = null;
+
+    const logDiv = document.getElementById("log");
+    const accessTokenStatus = document.getElementById("access-token-status");
+    const accessTokenText = document.getElementById("access-token-text");
+    const refreshTokenStatus = document.getElementById("refresh-token-status");
+    const refreshTokenText = document.getElementById("refresh-token-text");
+    const tokenExpiryElement = document.getElementById("token-expiry");
+    const notification = document.getElementById("notification");
+    const notificationMessage = document.getElementById("notification-message");
+
+    // Initialize UI
+    updateTokenStatus();
+
+    function showNotification(message, type = "info") {
+      notification.className = `notification ${type}`;
+      notificationMessage.textContent = message;
+      
+      const icon = notification.querySelector("i");
+      if (type === "success") {
+        icon.className = "fas fa-check-circle";
+      } else if (type === "error") {
+        icon.className = "fas fa-exclamation-circle";
+      } else if (type === "warning") {
+        icon.className = "fas fa-exclamation-triangle";
+      } else {
+        icon.className = "fas fa-info-circle";
+      }
+      
+      notification.classList.add("show");
+      
+      setTimeout(() => {
+        notification.classList.remove("show");
+      }, 3000);
+    }
+
+    function log(msg, type = "info") {
+      const timestamp = new Date().toLocaleTimeString();
+      const logEntry = document.createElement("div");
+      logEntry.className = `log-entry ${type}`;
+      logEntry.innerHTML = `<span class="log-timestamp">[${timestamp}]</span> <span class="log-message">${msg}</span>`;
+      logDiv.appendChild(logEntry);
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    function updateTokenStatus() {
+      if (accessToken) {
+        accessTokenStatus.className = "status status-valid";
+        accessTokenText.textContent = "Valid";
+      } else {
+        accessTokenStatus.className = "status status-expired";
+        accessTokenText.textContent = "Not logged in";
+      }
+
+      if (refreshToken) {
+        refreshTokenStatus.className = "status status-valid";
+        refreshTokenText.textContent = "Available";
+      } else {
+        refreshTokenStatus.className = "status status-expired";
+        refreshTokenText.textContent = "Not available";
+      }
+
+      if (tokenExpiry) {
+        const now = Date.now();
+        const timeToExpiry = tokenExpiry - now;
+        
+        if (timeToExpiry > 0) {
+          const minutes = Math.floor(timeToExpiry / 60000);
+          const seconds = Math.floor((timeToExpiry % 60000) / 1000);
+          tokenExpiryElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        } else {
+          tokenExpiryElement.textContent = "Expired";
+        }
+      } else {
+        tokenExpiryElement.textContent = "--:--";
+      }
+    }
+
+    async function login() {
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+
+      if (!username || !password) {
+        showNotification("Please enter both username and password", "error");
+        return;
+      }
+
+      try {
+        log("Attempting login...", "info");
+        
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Mock response for demonstration
+        const mockResponse = {
+          accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyMzkwMjJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+          refreshToken: "dGhpcyBpcyBhIG1vY2sgcmVmcmVzaCB0b2tlbg=="
+        };
+
+        // In a real implementation, you would use:
+        // const res = await fetch("http://localhost:3000/login", {
+        //   method: "POST",
+        //   headers: { "Content-Type": "application/json" },
+        //   body: JSON.stringify({ username, password }),
+        // });
+        // const data = await res.json();
+
+        const data = mockResponse;
+
+        if (data.accessToken && data.refreshToken) {
+          accessToken = data.accessToken;
+          refreshToken = data.refreshToken;
+
+          // Mock token expiry - 15 minutes from now
+          tokenExpiry = Date.now() + 15 * 60 * 1000;
+
+          log("Login successful.", "success");
+          showNotification("Login successful!", "success");
+          updateTokenStatus();
+          scheduleTokenRefresh();
+        } else {
+          log("Login failed. Invalid credentials.", "error");
+          showNotification("Login failed. Please check your credentials.", "error");
+        }
+      } catch (error) {
+        log("Login error: " + error.message, "error");
+        showNotification("Login error: " + error.message, "error");
+      }
+    }
+
+    function scheduleTokenRefresh() {
+      if (refreshTimer) clearTimeout(refreshTimer);
+
+      const now = Date.now();
+      const timeToExpiry = tokenExpiry - now;
+      const refreshTime = timeToExpiry - 10000; // 10 seconds before expiry
+
+      if (refreshTime > 0) {
+        log(`Access token valid for ${Math.floor(timeToExpiry / 1000)}s.`, "info");
+        refreshTimer = setTimeout(refreshAccessToken, refreshTime);
+      } else {
+        refreshAccessToken(); // Already expired or about to
+      }
+    }
+
+    async function refreshAccessToken() {
+      try {
+        log("Refreshing access token...", "warning");
+        accessTokenStatus.className = "status status-refreshing";
+        accessTokenText.textContent = "Refreshing...";
+        
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Mock response for demonstration
+        const mockResponse = {
+          accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyNDI2MjJ9.4Adcj3UFYzPUVaVF43FmMab6RlaQD8A5Vn7vL2M8NcA"
+        };
+
+        // In a real implementation, you would use:
+        // const res = await fetch("http://localhost:3000/refresh", {
+        //   method: "POST",
+        //   headers: { "Content-Type": "application/json" },
+        //   body: JSON.stringify({ refreshToken }),
+        // });
+        // const data = await res.json();
+
+        const data = mockResponse;
+
+        if (data.accessToken) {
+          accessToken = data.accessToken;
+          
+          // Mock token expiry - 15 minutes from now
+          tokenExpiry = Date.now() + 15 * 60 * 1000;
+          
+          log("Token refreshed successfully.", "success");
+          showNotification("Token refreshed successfully!", "success");
+          updateTokenStatus();
+          scheduleTokenRefresh();
+        } else {
+          log("Refresh failed. Please login again.", "error");
+          showNotification("Refresh failed. Please login again.", "error");
+          accessToken = "";
+          refreshToken = "";
+          tokenExpiry = null;
+          updateTokenStatus();
+        }
+      } catch (error) {
+        log("Error refreshing token: " + error.message, "error");
+        showNotification("Error refreshing token: " + error.message, "error");
+      }
+    }
+
+    async function getProtectedData() {
+      if (!accessToken) {
+        log("No access token available. Please login first.", "error");
+        showNotification("No access token available. Please login first.", "error");
+        return;
+      }
+
+      try {
+        log("Accessing protected route...", "info");
+        
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        // Mock response for demonstration
+        const mockResponse = {
+          message: "This is protected data from the server",
+          user: "john_doe",
+          permissions: ["read", "write"]
+        };
+
+        // In a real implementation, you would use:
+        // const res = await fetch("http://localhost:3000/protected", {
+        //   method: "GET",
+        //   headers: {
+        //     Authorization: `Bearer ${accessToken}`,
+        //   },
+        // });
+
+        // if (res.status === 401) {
+        //   log("Unauthorized. Token may be expired.", "error");
+        //   showNotification("Unauthorized. Token may be expired.", "error");
+        // } else {
+        //   const data = await res.json();
+        //   log("Protected data: " + JSON.stringify(data), "success");
+        //   showNotification("Protected data retrieved successfully!", "success");
+        // }
+
+        log("Protected data: " + JSON.stringify(mockResponse), "success");
+        showNotification("Protected data retrieved successfully!", "success");
+      } catch (error) {
+        log("Error fetching protected data: " + error.message, "error");
+        showNotification("Error fetching protected data: " + error.message, "error");
+      }
+    }
+
+    function clearLog() {
+      logDiv.innerHTML = "";
+      log("Log cleared", "info");
+    }
+
+    function exportLog() {
+      const logContent = logDiv.innerText;
+      const blob = new Blob([logContent], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "jwt-log.txt";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      log("Log exported", "success");
+      showNotification("Log exported successfully!", "success");
+    }
+
+    // Update token expiry countdown every second
+    setInterval(updateTokenStatus, 1000);
+  </script>
+</body>
+</html>
